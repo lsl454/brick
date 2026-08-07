@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#070a12">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+  <title>砖块消消落 · Brick Fall</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <canvas id="bgCanvas" class="bg-canvas"></canvas>
+  <div class="scanlines"></div>
+
+  <div id="stage" class="stage">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-cn">砖块消消落</span>
+        <span class="brand-en">BRICK FALL</span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="btnPause" aria-label="暂停或继续">❚❚</button>
+        <button class="icon-btn" id="btnSfx" aria-label="音效开关">🔊</button>
+        <button class="icon-btn" id="btnMusic" aria-label="音乐开关">♪</button>
+      </div>
+    </header>
+
+    <section class="level-strip">
+      <span id="lvGoalText">距离 LV2 还需 12 行</span>
+      <div class="level-bar"><i id="lvBarFill"></i></div>
+    </section>
+
+    <section class="hud" aria-label="游戏状态">
+      <div class="hud-cell hud-score"><span>得分</span><b id="uiScore">0</b></div>
+      <div class="hud-cell"><span>最高</span><b id="uiHigh">0</b></div>
+      <div class="hud-cell"><span>等级</span><b id="uiLevel">1</b></div>
+      <div class="hud-cell"><span>连锁</span><b id="uiChain">0</b></div>
+      <div class="hud-cell"><span>消行</span><b id="uiLines">0</b></div>
+    </section>
+
+    <section class="preview-row">
+      <div class="preview-card hold-card">
+        <span class="preview-title">暂存</span>
+        <canvas id="holdCanvas" class="mini-canvas" width="104" height="58"></canvas>
+      </div>
+
+      <div class="compact-meta">
+        <div><span>连击</span><b id="uiCombo">0</b></div>
+        <div id="uiB2BCell"><span>B2B</span><b id="uiB2B">—</b></div>
+        <div><span>速度</span><b id="uiSpeed">1.0x</b></div>
+      </div>
+
+      <div class="preview-card next-card">
+        <span class="preview-title">下一个</span>
+        <div class="next-stack">
+          <canvas id="nextCanvas0" class="mini-canvas next-main" width="104" height="58"></canvas>
+          <div class="next-small-row">
+            <canvas id="nextCanvas1" class="mini-canvas next-small" width="48" height="28"></canvas>
+            <canvas id="nextCanvas2" class="mini-canvas next-small" width="48" height="28"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main class="game-area">
+      <div class="board-wrap" id="boardWrap">
+        <canvas id="boardCanvas" aria-label="砖块消消落游戏棋盘"></canvas>
+
+        <div class="ov" id="ovMenu">
+          <div class="ov-inner">
+            <h1 class="ov-title">砖块消消落</h1>
+            <p class="ov-sub">俄罗斯方块 × 独立重力 × 连锁爆破</p>
+            <div class="ov-high">历史最高 <b id="ovHigh">0</b></div>
+            <button class="btn btn-main" id="btnStart">开始游戏</button>
+            <button class="btn" id="btnHow">玩法说明</button>
+            <p class="ov-hint">手机可使用下方按钮，也可在棋盘滑动</p>
+          </div>
+        </div>
+
+        <div class="ov" id="ovHow" hidden>
+          <div class="ov-inner ov-scroll">
+            <h2 class="ov-title sm">玩法说明</h2>
+            <div class="how">
+              <p><b>手机操作</b><br>点击棋盘旋转；左右滑动移动；向下滑动软降；快速下滑硬降。也可以直接使用下方大按钮。</p>
+              <p><b>独立重力</b><br>整行消除后，上方每块砖会独立寻找落点，可能继续形成新的满行。</p>
+              <p><b>连锁消除</b><br>砖块落稳后再次凑满一行会自动继续消除，连锁越深分数越高。</p>
+              <p><b>特殊砖块</b><br>爆破砖炸毁周围区域，激光砖贯穿整列，星辉砖清除全盘同色。</p>
+            </div>
+            <button class="btn" id="btnHowBack">返回</button>
+          </div>
+        </div>
+
+        <div class="ov" id="ovPause" hidden>
+          <div class="ov-inner">
+            <h2 class="ov-title sm">已暂停</h2>
+            <button class="btn btn-main" id="btnResume">继续游戏</button>
+            <button class="btn" id="btnRestartPause">重新开始</button>
+            <button class="btn" id="btnHomePause">返回首页</button>
+          </div>
+        </div>
+
+        <div class="ov" id="ovOver" hidden>
+          <div class="ov-inner ov-scroll">
+            <h2 class="ov-title sm" id="ovOverTitle">游戏结束</h2>
+            <div class="final-score"><span>本局得分</span><b id="ovScore">0</b></div>
+            <div class="final-grid">
+              <div><span>历史最高</span><b id="ovBest">0</b></div>
+              <div><span>达到等级</span><b id="ovLevel">1</b></div>
+              <div><span>消除行数</span><b id="ovLines">0</b></div>
+              <div><span>最大连锁</span><b id="ovChain">0</b></div>
+              <div><span>最大连击</span><b id="ovCombo">0</b></div>
+              <div><span>四连消</span><b id="ovTetris">0</b></div>
+              <div><span>T-Spin</span><b id="ovTspin">0</b></div>
+              <div><span>特殊砖</span><b id="ovSpecial">0</b></div>
+            </div>
+            <button class="btn btn-main" id="btnAgain">再来一局</button>
+            <button class="btn" id="btnHomeOver">返回首页</button>
+          </div>
+        </div>
+
+        <div class="countdown" id="countdown" hidden><span id="cdText">3</span></div>
+        <div class="danger-vig" id="dangerVig"></div>
+      </div>
+    </main>
+
+    <section class="touch-controls" id="touchControls" aria-label="手机操作按钮">
+      <button class="touch-btn action" id="touchHold"><span>暂存</span><b>HOLD</b></button>
+      <button class="touch-btn action" id="touchRotateCCW"><span>↶</span><b>左转</b></button>
+      <button class="touch-btn action primary" id="touchRotateCW"><span>↷</span><b>右转</b></button>
+      <button class="touch-btn action danger" id="touchDrop"><span>⇊</span><b>硬降</b></button>
+      <button class="touch-btn move" id="touchLeft"><span>←</span><b>左移</b></button>
+      <button class="touch-btn move" id="touchDown"><span>↓</span><b>软降</b></button>
+      <button class="touch-btn move" id="touchRight"><span>→</span><b>右移</b></button>
+      <button class="touch-btn action" id="touchPause"><span>Ⅱ</span><b>暂停</b></button>
+    </section>
+
+    <div class="hidden-stats" aria-hidden="true">
+      <span id="uiMaxChain">0</span>
+      <span id="uiTetris">0</span>
+      <span id="uiTspin">0</span>
+      <button id="btnRestartSide" tabindex="-1">重新开始</button>
+    </div>
+  </div>
+
+  <script src="src/core.js"></script>
+  <script src="src/textures.js"></script>
+  <script src="src/effects.js"></script>
+  <script src="src/background.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/themes.js"></script>
+  <script src="src/game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

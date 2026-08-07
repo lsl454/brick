@@ -1,0 +1,12 @@
+{
+  "appId": "com.leefei.brickfall",
+  "appName": "Brick Fall",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#05070D",
+    "allowMixedContent": false
+  }
+}
