@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#070a12">
+  <meta name="theme-color" content="#05070d">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,54 +18,22 @@
   <div class="scanlines"></div>
 
   <div id="stage" class="stage">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-cn">砖块消消落</span>
-        <span class="brand-en">BRICK FALL</span>
+    <header class="playbar">
+      <div class="live-score">
+        <span>得分</span>
+        <b id="uiScore">0</b>
       </div>
-      <div class="top-actions">
-        <button class="icon-btn" id="btnPause" aria-label="暂停或继续">❚❚</button>
-        <button class="icon-btn" id="btnSfx" aria-label="音效开关">🔊</button>
-        <button class="icon-btn" id="btnMusic" aria-label="音乐开关">♪</button>
+
+      <div class="mini-brand" aria-label="砖块消消落">
+        <b>BRICK FALL</b>
+        <span>砖块消消落</span>
+      </div>
+
+      <div class="playbar-right">
+        <div class="live-level"><span>LV</span><b id="uiLevel">1</b></div>
+        <button class="menu-btn" id="btnPanel" aria-label="打开游戏信息和设置">☰</button>
       </div>
     </header>
-
-    <section class="level-strip">
-      <span id="lvGoalText">距离 LV2 还需 12 行</span>
-      <div class="level-bar"><i id="lvBarFill"></i></div>
-    </section>
-
-    <section class="hud" aria-label="游戏状态">
-      <div class="hud-cell hud-score"><span>得分</span><b id="uiScore">0</b></div>
-      <div class="hud-cell"><span>最高</span><b id="uiHigh">0</b></div>
-      <div class="hud-cell"><span>等级</span><b id="uiLevel">1</b></div>
-      <div class="hud-cell"><span>连锁</span><b id="uiChain">0</b></div>
-      <div class="hud-cell"><span>消行</span><b id="uiLines">0</b></div>
-    </section>
-
-    <section class="preview-row">
-      <div class="preview-card hold-card">
-        <span class="preview-title">暂存</span>
-        <canvas id="holdCanvas" class="mini-canvas" width="104" height="58"></canvas>
-      </div>
-
-      <div class="compact-meta">
-        <div><span>连击</span><b id="uiCombo">0</b></div>
-        <div id="uiB2BCell"><span>B2B</span><b id="uiB2B">—</b></div>
-        <div><span>速度</span><b id="uiSpeed">1.0x</b></div>
-      </div>
-
-      <div class="preview-card next-card">
-        <span class="preview-title">下一个</span>
-        <div class="next-stack">
-          <canvas id="nextCanvas0" class="mini-canvas next-main" width="104" height="58"></canvas>
-          <div class="next-small-row">
-            <canvas id="nextCanvas1" class="mini-canvas next-small" width="48" height="28"></canvas>
-            <canvas id="nextCanvas2" class="mini-canvas next-small" width="48" height="28"></canvas>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <main class="game-area">
       <div class="board-wrap" id="boardWrap">
@@ -78,7 +46,7 @@
             <div class="ov-high">历史最高 <b id="ovHigh">0</b></div>
             <button class="btn btn-main" id="btnStart">开始游戏</button>
             <button class="btn" id="btnHow">玩法说明</button>
-            <p class="ov-hint">手机可使用下方按钮，也可在棋盘滑动</p>
+            <p class="ov-hint">点击棋盘旋转，左右滑动移动，快速下滑硬降</p>
           </div>
         </div>
 
@@ -86,7 +54,7 @@
           <div class="ov-inner ov-scroll">
             <h2 class="ov-title sm">玩法说明</h2>
             <div class="how">
-              <p><b>手机操作</b><br>点击棋盘旋转；左右滑动移动；向下滑动软降；快速下滑硬降。也可以直接使用下方大按钮。</p>
+              <p><b>手机操作</b><br>点击棋盘旋转；左右滑动移动；向下滑动软降；快速下滑硬降。</p>
               <p><b>独立重力</b><br>整行消除后，上方每块砖会独立寻找落点，可能继续形成新的满行。</p>
               <p><b>连锁消除</b><br>砖块落稳后再次凑满一行会自动继续消除，连锁越深分数越高。</p>
               <p><b>特殊砖块</b><br>爆破砖炸毁周围区域，激光砖贯穿整列，星辉砖清除全盘同色。</p>
@@ -129,22 +97,74 @@
     </main>
 
     <section class="touch-controls" id="touchControls" aria-label="手机操作按钮">
-      <button class="touch-btn action" id="touchHold"><span>暂存</span><b>HOLD</b></button>
-      <button class="touch-btn action" id="touchRotateCCW"><span>↶</span><b>左转</b></button>
-      <button class="touch-btn action primary" id="touchRotateCW"><span>↷</span><b>右转</b></button>
-      <button class="touch-btn action danger" id="touchDrop"><span>⇊</span><b>硬降</b></button>
-      <button class="touch-btn move" id="touchLeft"><span>←</span><b>左移</b></button>
-      <button class="touch-btn move" id="touchDown"><span>↓</span><b>软降</b></button>
-      <button class="touch-btn move" id="touchRight"><span>→</span><b>右移</b></button>
-      <button class="touch-btn action" id="touchPause"><span>Ⅱ</span><b>暂停</b></button>
+      <button class="touch-btn" id="touchHold"><span>H</span><b>暂存</b></button>
+      <button class="touch-btn" id="touchRotateCCW"><span>↶</span><b>左转</b></button>
+      <button class="touch-btn primary" id="touchRotateCW"><span>↷</span><b>右转</b></button>
+      <button class="touch-btn danger" id="touchDrop"><span>⇊</span><b>硬降</b></button>
+      <button class="touch-btn" id="touchLeft"><span>←</span><b>左移</b></button>
+      <button class="touch-btn" id="touchDown"><span>↓</span><b>软降</b></button>
+      <button class="touch-btn" id="touchRight"><span>→</span><b>右移</b></button>
+      <button class="touch-btn" id="touchPause"><span>Ⅱ</span><b>暂停</b></button>
     </section>
+  </div>
 
-    <div class="hidden-stats" aria-hidden="true">
-      <span id="uiMaxChain">0</span>
-      <span id="uiTetris">0</span>
-      <span id="uiTspin">0</span>
-      <button id="btnRestartSide" tabindex="-1">重新开始</button>
+  <div class="panel-backdrop" id="panelBackdrop" hidden></div>
+  <aside class="side-panel" id="sidePanel" hidden aria-label="游戏信息和设置">
+    <header class="panel-head">
+      <div><b>游戏信息</b><span>查看数据、预览与设置</span></div>
+      <button id="btnClosePanel" aria-label="关闭">×</button>
+    </header>
+
+    <div class="panel-scroll">
+      <section class="level-strip">
+        <span id="lvGoalText">距离 LV2 还需 12 行</span>
+        <div class="level-bar"><i id="lvBarFill"></i></div>
+      </section>
+
+      <section class="hud" aria-label="游戏状态">
+        <div class="hud-cell"><span>最高</span><b id="uiHigh">0</b></div>
+        <div class="hud-cell"><span>连锁</span><b id="uiChain">0</b></div>
+        <div class="hud-cell"><span>消行</span><b id="uiLines">0</b></div>
+        <div class="hud-cell"><span>连击</span><b id="uiCombo">0</b></div>
+        <div class="hud-cell" id="uiB2BCell"><span>B2B</span><b id="uiB2B">—</b></div>
+        <div class="hud-cell"><span>速度</span><b id="uiSpeed">1.0x</b></div>
+      </section>
+
+      <section class="preview-row">
+        <div class="preview-card">
+          <span class="preview-title">暂存</span>
+          <canvas id="holdCanvas" class="mini-canvas" width="104" height="58"></canvas>
+        </div>
+        <div class="preview-card next-card">
+          <span class="preview-title">下一个</span>
+          <div class="next-stack">
+            <canvas id="nextCanvas0" class="mini-canvas next-main" width="104" height="58"></canvas>
+            <div class="next-small-row">
+              <canvas id="nextCanvas1" class="mini-canvas next-small" width="48" height="28"></canvas>
+              <canvas id="nextCanvas2" class="mini-canvas next-small" width="48" height="28"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-actions">
+        <button id="btnPause"><span>❚❚</span><b>暂停 / 继续</b></button>
+        <button id="btnSfx"><span>🔊</span><b>音效</b></button>
+        <button id="btnMusic"><span>♪</span><b>音乐</b></button>
+        <button id="btnRestartSide"><span>↻</span><b>重新开始</b></button>
+      </section>
+
+      <section class="panel-tip">
+        <b>操作提示</b>
+        <p>点击棋盘旋转；左右滑动移动；向下滑动软降；快速下滑硬降。打开本面板时，游戏会临时冻结。</p>
+      </section>
     </div>
+  </aside>
+
+  <div class="hidden-stats" aria-hidden="true">
+    <span id="uiMaxChain">0</span>
+    <span id="uiTetris">0</span>
+    <span id="uiTspin">0</span>
   </div>
 
   <script src="src/core.js"></script>

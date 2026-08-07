@@ -1,4 +1,4 @@
-const CACHE = 'brick-fall-mobile-v1';
+const CACHE = 'brick-fall-mobile-v2-fullscreen';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './src/style.css', './src/core.js', './src/textures.js', './src/effects.js',

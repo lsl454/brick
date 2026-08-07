@@ -7,14 +7,14 @@
 
   const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
   const IS_MOBILE = IS_TOUCH || window.innerWidth <= 720;
-  const FRAME = IS_MOBILE ? 14 : 26;
+  const FRAME = IS_MOBILE ? 10 : 26;
   function calculateCellSize() {
     if (!IS_MOBILE) return 32;
     const vw = Math.max(280, window.visualViewport ? window.visualViewport.width : window.innerWidth);
     const vh = Math.max(520, window.visualViewport ? window.visualViewport.height : window.innerHeight);
-    const byWidth = Math.floor((vw - 16 - FRAME * 2) / core.COLS);
-    const byHeight = Math.floor((vh - 290 - FRAME * 2) / core.ROWS);
-    return Math.max(18, Math.min(30, byWidth, byHeight));
+    const byWidth = Math.floor((vw - 14 - FRAME * 2) / core.COLS);
+    const byHeight = Math.floor((vh - 150 - FRAME * 2) / core.ROWS);
+    return Math.max(22, Math.min(40, byWidth, byHeight));
   }
   const CELL = calculateCellSize();
   const HS_KEY = 'brickfall2_best';
@@ -77,6 +77,7 @@
       this.bindUI();
       this.bindKeys();
       this.bindTouchControls();
+      this.bindPanel();
       this.syncUI(true);
       this.showOverlay('ovMenu');
       this.fit();
@@ -149,24 +150,69 @@
 
     // ---------------- UI 绑定 ----------------
     bindUI() {
-      const on = (id, fn) => { const e = $(id); if (e) e.addEventListener('click', () => { this.audio.click(); fn(); }); };
-      on('btnStart', () => this.start());
-      on('btnHow', () => { this.state = 'how'; this.showOverlay('ovHow'); });
-      on('btnHowBack', () => { this.state = 'menu'; this.showOverlay('ovMenu'); });
-      on('btnResume', () => this.pause(false));
-      on('btnRestartPause', () => this.start());
-      on('btnHomePause', () => this.home());
-      on('btnAgain', () => this.start());
-      on('btnHomeOver', () => this.home());
-      on('btnRestartSide', () => { if (this.state !== 'menu' && this.state !== 'how') this.start(); });
-      $('btnPause').addEventListener('click', () => this.pause());
-      $('btnSfx').addEventListener('click', () => this.toggleSfx());
-      $('btnMusic').addEventListener('click', () => this.toggleMusic());
+      const on = (id, fn) => { const e = $(id); if (e) e.addEventListener("click", () => { this.audio.click(); fn(); }); };
+      on("btnStart", () => this.start());
+      on("btnHow", () => { this.state = "how"; this.showOverlay("ovHow"); });
+      on("btnHowBack", () => { this.state = "menu"; this.showOverlay("ovMenu"); });
+      on("btnResume", () => this.pause(false));
+      on("btnRestartPause", () => this.start());
+      on("btnHomePause", () => this.home());
+      on("btnAgain", () => this.start());
+      on("btnHomeOver", () => this.home());
+      on("btnRestartSide", () => { if (this.state !== "menu" && this.state !== "how") this.start(); });
+      $("btnPause").addEventListener("click", () => this.pause());
+      $("btnSfx").addEventListener("click", () => this.toggleSfx());
+      $("btnMusic").addEventListener("click", () => this.toggleMusic());
+    }
+
+    bindPanel() {
+      const open = $("btnPanel");
+      const close = $("btnClosePanel");
+      const panel = $("sidePanel");
+      const backdrop = $("panelBackdrop");
+      if (!open || !close || !panel || !backdrop) return;
+
+      const closePanel = () => {
+        panel.hidden = true;
+        backdrop.hidden = true;
+        document.body.classList.remove("panel-open");
+        if (this.state === "panel-frozen" && this.panelFrozenState) {
+          this.state = this.panelFrozenState;
+        }
+        this.panelFrozenState = null;
+      };
+
+      const openPanel = () => {
+        if (this.state === "playing" || this.state === "countdown") {
+          this.panelFrozenState = this.state;
+          this.state = "panel-frozen";
+        }
+        panel.hidden = false;
+        backdrop.hidden = false;
+        document.body.classList.add("panel-open");
+      };
+
+      this.openPanel = openPanel;
+      this.closePanel = closePanel;
+      open.addEventListener("click", () => {
+        this.audio.click();
+        panel.hidden ? openPanel() : closePanel();
+      });
+      close.addEventListener("click", () => { this.audio.click(); closePanel(); });
+      backdrop.addEventListener("click", closePanel);
+    }
+
+    setPanelIcon(id, value) {
+      const button = $(id);
+      if (!button) return;
+      const icon = button.querySelector("span");
+      if (icon) icon.textContent = value;
+      else button.textContent = value;
     }
 
     toggleSfx() {
       const m = this.audio.toggleMute();
-      $('btnSfx').textContent = m ? '🔇' : '🔊';
+      this.setPanelIcon('btnSfx', m ? '🔇' : '🔊');
       $('btnSfx').classList.toggle('off', m);
       if (!m) this.audio.click();
     }
@@ -320,6 +366,7 @@
     onKey(code) {
       if (code === 'KeyM') { this.toggleSfx(); return; }
       if (code === 'KeyN') { this.toggleMusic(); return; }
+      if (this.closePanel && !$("sidePanel").hidden && code === 'Escape') { this.closePanel(); return; }
 
       if (this.state === 'menu') {
         if (code === 'Space' || code === 'Enter') this.start();
@@ -415,12 +462,13 @@
     // ---------------- 流程 ----------------
     start() {
       this.audio.init();
+      if (this.closePanel) this.closePanel();
       this.resetRun();
       this.hideOverlays();
       this.state = 'countdown';
       this.cdValue = 3;
       this.cdTimer = 0;
-      $('btnPause').textContent = '❚❚';
+      this.setPanelIcon('btnPause', '❚❚');
       $('countdown').hidden = false;
       $('cdText').textContent = '3';
       this.audio.countdown(3);
@@ -430,6 +478,7 @@
       this.syncUI(true);
     }
     home() {
+      if (this.closePanel) this.closePanel();
       this.state = 'menu';
       $('countdown').hidden = true;
       this.fx.clear();
@@ -437,17 +486,18 @@
       this.showOverlay('ovMenu');
     }
     pause(force) {
+      if (this.closePanel) this.closePanel();
       if (this.state === 'playing' && force !== false) {
         this.state = 'paused';
         this.showOverlay('ovPause');
-        $('btnPause').textContent = '▶';
+        this.setPanelIcon('btnPause', '▶');
       } else if (this.state === 'paused' && force !== true) {
         this.state = 'countdown';
         this.cdValue = 1; this.cdTimer = 0;
         this.hideOverlays();
         $('countdown').hidden = false;
         $('cdText').textContent = '1';
-        $('btnPause').textContent = '❚❚';
+        this.setPanelIcon('btnPause', '❚❚');
       }
     }
 
