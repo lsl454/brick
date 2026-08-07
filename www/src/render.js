@@ -104,7 +104,9 @@
       this._setupDpr();
     }
     _setupDpr() {
-      const dpr = Math.min(3, global.devicePixelRatio || 1);
+      // 砖块纹理本身已经 4 倍超采样烘焙好了，画布 dpr 封顶到 2 就已经足够清晰，
+      // 但能显著减少高分屏手机（dpr=3）上每帧要填充的像素数量。
+      const dpr = Math.min(2, global.devicePixelRatio || 1);
       this.dpr = dpr;
       this.canvas.width = Math.floor(this.w * dpr);
       this.canvas.height = Math.floor(this.h * dpr);
@@ -138,11 +140,14 @@
       ctx.fillStyle = '#000000';
       ctx.fillRect(x, y, w, h);
 
-      // 极淡的内阴影
-      const vs = ctx.createLinearGradient(x, y, x, y + h * 0.35);
-      vs.addColorStop(0, 'rgba(0,0,0,0.2)');
-      vs.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = vs;
+      // 极淡的内阴影（棋盘尺寸整局不变，缓存渐变对象，不用每帧重建）
+      if (!this._innerShadowGrad) {
+        const vs = ctx.createLinearGradient(x, y, x, y + h * 0.35);
+        vs.addColorStop(0, 'rgba(0,0,0,0.2)');
+        vs.addColorStop(1, 'rgba(0,0,0,0)');
+        this._innerShadowGrad = vs;
+      }
+      ctx.fillStyle = this._innerShadowGrad;
       ctx.fillRect(x, y, w, h * 0.35);
 
       // 网格（极淡）
@@ -183,14 +188,10 @@
         ctx.scale(1 + sq * 0.30, 1 - sq * 0.42);
         ctx.translate(-(x + size / 2), -(y + size));
       }
-      // 紧凑阴影提升层次，不再用大面积叠色覆盖纹理
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.92)';
-      ctx.shadowBlur = 2.2;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1.5;
+      // 纹理本身已经烘焙了阴影（见 textures.js），这里不再对每格实时算 shadowBlur。
+      // 逐格 shadowBlur 是移动端最耗性能的 canvas 操作之一，棋盘越满、每帧要算的格子
+      // 越多，这也是"玩着玩着就卡"的主因——改成直接贴图，观感几乎不变但帧时间大幅下降。
       ctx.drawImage(tex, x, y, size, size);
-      ctx.restore();
 
       // 像素级硬边高光，增强清晰度但保留石纹细节
       ctx.save();

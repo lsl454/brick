@@ -80,6 +80,8 @@
       if (this.theme && this.theme.id === theme.id) return;
       this.theme = theme;
       this.tile = buildWallTile(this.tileSize, theme);
+      this._pattern = null; // 主题变了，贴图图案要重建
+      this._topGrad = null; // 顶部环境光渐变只跟主题/尺寸有关，一起重建
     }
     resize() {
       const dpr = Math.min(2, global.devicePixelRatio || 1);
@@ -91,6 +93,8 @@
       this.canvas.style.height = this.h + 'px';
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       this._vignette = null;
+      this._pattern = null;
+      this._topGrad = null;
     }
     setFocus(px, py) { this.focus.x = px; this.focus.y = py; }
     pulse(amount) { this.targetHeat = Math.min(1, this.targetHeat + amount); }
@@ -138,22 +142,27 @@
       ctx.fillRect(0, 0, w, h);
 
       // 石墙平铺（带极缓慢视差漂移）
+      // createPattern/createLinearGradient 每次调用都要分配新对象，之前在这里每帧都重建，
+      // 纯属浪费——贴图和顶部光渐变只跟主题、屏幕尺寸有关，缓存起来即可。
       if (this.tile) {
+        if (!this._pattern) this._pattern = ctx.createPattern(this.tile, 'repeat');
         const drift = (this.time * 3) % this.tileSize;
-        const pat = ctx.createPattern(this.tile, 'repeat');
         ctx.save();
         ctx.globalAlpha = 0.85;
         ctx.translate(0, -drift * 0.15);
-        ctx.fillStyle = pat;
+        ctx.fillStyle = this._pattern;
         ctx.fillRect(0, 0, w, h + this.tileSize);
         ctx.restore();
       }
 
       // 顶部环境光
-      const top = ctx.createLinearGradient(0, 0, 0, h * 0.75);
-      top.addColorStop(0, T.rgba(th.ambient, 0.30));
-      top.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = top;
+      if (!this._topGrad) {
+        const top = ctx.createLinearGradient(0, 0, 0, h * 0.75);
+        top.addColorStop(0, T.rgba(th.ambient, 0.30));
+        top.addColorStop(1, 'rgba(0,0,0,0)');
+        this._topGrad = top;
+      }
+      ctx.fillStyle = this._topGrad;
       ctx.fillRect(0, 0, w, h * 0.75);
 
       // 棋盘后方的氛围辉光（随热度增强）
